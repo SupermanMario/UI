@@ -1,6 +1,6 @@
 --[[
 
-    -- Modified Version
+    -- Modified Version by Javen
                         dP          
                         88          
 .d8888b. dP    dP .d888b88 .d8888b. 
@@ -5014,6 +5014,27 @@ function syde:Init(library)
 			end
 
 			SetDropdownOptions()
+
+			local DropdownObject = {}
+
+			function DropdownObject:Refresh(newOptions)
+				DropdownData.Options = newOptions or DropdownData.Options
+
+				-- Clear existing options
+				for _, child in ipairs(dropdown.dropHolder.drop.Container:GetChildren()) do
+					if child:IsA("Frame") and child ~= OptionButton then
+						child:Destroy()
+					end
+				end
+
+				SelectedOptions = {}
+				SelectedOrder = {}
+
+				SetDropdownOptions()
+			end
+
+			return DropdownObject
+
 		end
 
 
