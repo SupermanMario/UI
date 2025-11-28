@@ -1086,15 +1086,15 @@ do
 						makefolder(discordFolder)
 					end)
 					if folderSuccess then
-						print("Syde 〡 Created DiscordInvites folder at:", discordFolder)
+						print("OblivionX 〡 Created DiscordInvites folder at:", discordFolder)
 					else
-						warn("Syde 〡 Failed to create DiscordInvites folder:", folderErr)
+						warn("OblivionX 〡 Failed to create DiscordInvites folder:", folderErr)
 					end
 				end
 
 				local shouldPrompt = true
 				if isfile and discordConfig.RememberJoins and isfile(inviteFilePath) then
-					print("Syde 〡 Discord invite '" .. inviteCode .. "' already joined. Skipping prompt.")
+					print("OblivionX 〡 Discord invite '" .. inviteCode .. "' already joined. Skipping prompt.")
 					shouldPrompt = false
 				end
 
@@ -1119,7 +1119,7 @@ do
 						end)
 
 						if reqSuccess then
-							print("Syde 〡 Discord invite sent successfully to:", inviteCode)
+							print("OblivionX 〡 Discord invite sent successfully to:", inviteCode)
 						else
 							warn("Syde 〡 Failed to send Discord invite:", reqErr)
 						end
@@ -1133,7 +1133,7 @@ do
 						end)
 
 						if writeSuccess then
-							print("Syde 〡 Logged Discord invite join for:", inviteCode)
+							print("OblivionX 〡 Logged Discord invite join for:", inviteCode)
 						else
 							warn("Syde 〡 Failed to write join log for invite:", writeErr)
 						end
