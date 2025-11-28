@@ -679,7 +679,7 @@ end
 do
 
 	function syde:Load(Config)
-		print('Syde 〡 Loader Loaded')
+		print('OblivionX 〡 Loader Loaded')
 		local LOADER = Loader
 		LOADER.Enabled = true
 		LOADER.Parent = coregui
