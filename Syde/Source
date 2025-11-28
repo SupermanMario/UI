@@ -679,7 +679,7 @@ end
 do
 
 	function syde:Load(Config)
-		print('OblivionX 〡 Loader Loaded')
+		print('Syde 〡 Loader Loaded')
 		local LOADER = Loader
 		LOADER.Enabled = true
 		LOADER.Parent = coregui
@@ -1086,15 +1086,15 @@ do
 						makefolder(discordFolder)
 					end)
 					if folderSuccess then
-						print("OblivionX 〡 Created DiscordInvites folder at:", discordFolder)
+						print("Syde 〡 Created DiscordInvites folder at:", discordFolder)
 					else
-						warn("OblivionX 〡 Failed to create DiscordInvites folder:", folderErr)
+						warn("Syde 〡 Failed to create DiscordInvites folder:", folderErr)
 					end
 				end
 
 				local shouldPrompt = true
 				if isfile and discordConfig.RememberJoins and isfile(inviteFilePath) then
-					print("OblivionX 〡 Discord invite '" .. inviteCode .. "' already joined. Skipping prompt.")
+					print("Syde 〡 Discord invite '" .. inviteCode .. "' already joined. Skipping prompt.")
 					shouldPrompt = false
 				end
 
@@ -1119,7 +1119,7 @@ do
 						end)
 
 						if reqSuccess then
-							print("OblivionX 〡 Discord invite sent successfully to:", inviteCode)
+							print("Syde 〡 Discord invite sent successfully to:", inviteCode)
 						else
 							warn("Syde 〡 Failed to send Discord invite:", reqErr)
 						end
@@ -1133,7 +1133,7 @@ do
 						end)
 
 						if writeSuccess then
-							print("OblivionX 〡 Logged Discord invite join for:", inviteCode)
+							print("Syde 〡 Logged Discord invite join for:", inviteCode)
 						else
 							warn("Syde 〡 Failed to write join log for invite:", writeErr)
 						end
