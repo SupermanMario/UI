@@ -1351,13 +1351,16 @@ end
 
 ---- mobile support
 
+-- Restore button controller (fixed)
+-- Place this after your main library initialization (keeps references to userinput, tweenservice, camera, Library, WINDOW, syde, etc.)
+
 local RESTORE_FORCE_PC = false -- test for PC when i cant test on Mobile <:
 
 local RESTORE_ICON = "rbxassetid://83267942683828"
 local RESTORE_POS  = UDim2.new(0, 18, 0, 18)
 
 local GuiService = game:GetService("GuiService")
-local isMobile = userinput and userinput.TouchEnabled
+local isMobile = (userinput and userinput.TouchEnabled) or false
 local RESTORE_ENABLED_DEFAULT = (RESTORE_FORCE_PC == true) or isMobile
 
 -- Controller
@@ -1366,6 +1369,98 @@ local Restore = {
     btn = nil,
     enabled = false
 }
+
+-- Robust toggle helper that tries multiple common entry points
+local function safeToggleUI()
+    -- 1) local/global ToggleUI
+    if type(ToggleUI) == "function" then
+        local ok, _ = pcall(ToggleUI)
+        if ok then return true end
+    end
+    if type(_G.ToggleUI) == "function" then
+        local ok, _ = pcall(_G.ToggleUI)
+        if ok then return true end
+    end
+
+    -- 2) SydeUI exposed API
+    if type(SydeUI) == "table" then
+        if type(SydeUI.ToggleUI) == "function" then
+            local ok, _ = pcall(SydeUI.ToggleUI)
+            if ok then return true end
+        end
+        if type(SydeUI.Toggle) == "function" then
+            local ok, _ = pcall(SydeUI.Toggle)
+            if ok then return true end
+        end
+    end
+
+    -- 3) OpenUI / CloseUI pair (try to call OpenUI if closed, CloseUI if open)
+    if type(OpenUI) == "function" or type(CloseUI) == "function" then
+        local isClosed = true
+        if type(WINDOW) == "table" and WINDOW.Visible ~= nil then
+            isClosed = (WINDOW.Visible == false)
+        elseif type(Library) == "table" and Library.Enabled ~= nil then
+            isClosed = (Library.Enabled == false)
+        end
+
+        if isClosed and type(OpenUI) == "function" then
+            local ok, _ = pcall(OpenUI)
+            if ok then return true end
+        elseif (not isClosed) and type(CloseUI) == "function" then
+            local ok, _ = pcall(CloseUI)
+            if ok then return true end
+        end
+    end
+
+    -- 4) Toggle Library.Enabled or Window.Visible
+    if type(Library) == "table" and Library.Enabled ~= nil then
+        local ok = pcall(function() Library.Enabled = not Library.Enabled end)
+        if ok then return true end
+    end
+
+    if type(WINDOW) == "table" and WINDOW.Visible ~= nil then
+        local ok = pcall(function() WINDOW.Visible = not WINDOW.Visible end)
+        if ok then return true end
+    end
+
+    -- 5) Try toggling common internal roots
+    local function tryToggleRoot(root)
+        if type(root) ~= "table" then return false end
+        if root.Visible ~= nil then
+            local ok = pcall(function() root.Visible = not root.Visible end)
+            if ok then return true end
+        end
+        if root.Enabled ~= nil then
+            local ok = pcall(function() root.Enabled = not root.Enabled end)
+            if ok then return true end
+        end
+        return false
+    end
+
+    if type(Library) == "table" and type(Library.lib) == "table" then
+        if tryToggleRoot(Library.lib.Main) or tryToggleRoot(Library.lib.Window) or tryToggleRoot(Library.lib) then
+            return true
+        end
+    end
+
+    -- 6) last resort: try some global candidate names
+    local candidates = { "Toggle", "toggleUI", "_TOGGLE_UI", "ToggleWindow" }
+    for _, name in ipairs(candidates) do
+        if type(_G[name]) == "function" then
+            local ok, _ = pcall(_G[name])
+            if ok then return true end
+        end
+    end
+
+    -- 7) notify/log
+    if type(SydeUI) == "table" and type(SydeUI.Notify) == "function" then
+        pcall(function()
+            SydeUI:Notify({ Title = "Restore", Content = "Could not find UI toggle handler", Duration = 4 })
+        end)
+    end
+    warn("[SydeRestore] safeToggleUI: no toggle method found")
+    return false
+end
 
 function Restore:_create()
     if not coregui then return end
@@ -1395,89 +1490,121 @@ function Restore:_create()
 
         -- Hover/press FX
         b.MouseEnter:Connect(function()
-            tweenservice:Create(b, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {ImageTransparency = 0}):Play()
+            pcall(function() tweenservice:Create(b, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {ImageTransparency = 0}):Play() end)
         end)
         b.MouseLeave:Connect(function()
-            tweenservice:Create(b, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {ImageTransparency = 0.2}):Play()
+            pcall(function() tweenservice:Create(b, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {ImageTransparency = 0.2}):Play() end)
         end)
         b.MouseButton1Down:Connect(function()
-            tweenservice:Create(b, TweenInfo.new(0.12, Enum.EasingStyle.Sine), {Size = UDim2.new(0, 38, 0, 38)}):Play()
+            pcall(function() tweenservice:Create(b, TweenInfo.new(0.12, Enum.EasingStyle.Sine), {Size = UDim2.new(0, 38, 0, 38)}):Play() end)
         end)
         b.MouseButton1Up:Connect(function()
-            tweenservice:Create(b, TweenInfo.new(0.12, Enum.EasingStyle.Sine), {Size = UDim2.new(0, 42, 0, 42)}):Play()
+            pcall(function() tweenservice:Create(b, TweenInfo.new(0.12, Enum.EasingStyle.Sine), {Size = UDim2.new(0, 42, 0, 42)}):Play() end)
         end)
 
-        -- Draggable
-        if syde and syde.AddDrag then
-            syde:AddDrag(b, b, true)
+        -- Draggable (prefer syde:AddDrag)
+        if syde and type(syde.AddDrag) == "function" then
+            pcall(function() syde:AddDrag(b, b, true) end)
+        else
+            -- fallback simple drag
+            local dragging, startPos, startGuiPos = false, nil, nil
+            b.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true
+                    startPos = input.Position
+                    startGuiPos = b.Position
+                end
+            end)
+            b.InputChanged:Connect(function(input)
+                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    local delta = input.Position - startPos
+                    b.Position = UDim2.new(startGuiPos.X.Scale, startGuiPos.X.Offset + delta.X, startGuiPos.Y.Scale, startGuiPos.Y.Offset + delta.Y)
+                end
+            end)
+            b.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = false
+                end
+            end)
         end
 
-        -- Toggle handler
-        local function RestoreToggle()
-            if ToggleUI then
-                ToggleUI()
+        -- Click (works on touch and mouse) -> use robust toggle
+        b.MouseButton1Click:Connect(function()
+            local ok = safeToggleUI()
+            if not ok then
+                -- visual feedback for failure
+                pcall(function()
+                    tweenservice:Create(b, TweenInfo.new(0.12, Enum.EasingStyle.Sine), {ImageTransparency = 0.6}):Play()
+                    task.delay(0.18, function()
+                        tweenservice:Create(b, TweenInfo.new(0.12, Enum.EasingStyle.Sine), {ImageTransparency = 0.2}):Play()
+                    end)
+                end)
+            end
+        end)
+
+        -- Honor keybind: prefer UIToggle if present, otherwise use G
+        local function onInputBegan(input, processed)
+            if processed then return end
+            if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+
+            local key = input.KeyCode
+            -- prefer a library-provided UIToggle if available
+            local expected = nil
+            pcall(function()
+                expected = _G.UIToggle or (SydeUI and SydeUI.UIToggle) or nil
+            end)
+            if expected and key == expected then
+                safeToggleUI()
                 return
             end
-            if Library then
-                local isClosed = (WINDOW and WINDOW.Visible == false) or (Library.Enabled == false)
-                if isClosed then
-                    if OpenUI then OpenUI() end
-                    Library.Enabled = true
-                else
-                    if CloseUI then CloseUI() end
-                    Library.Enabled = false
-                end
+
+            -- fallback: G key
+            if key == Enum.KeyCode.G then
+                safeToggleUI()
             end
         end
 
-        -- Click (works on touch and mouse)
-        b.MouseButton1Click:Connect(RestoreToggle)
-
-        -- Honor keybind
-        if syde and syde.AddConnection then
-            syde:AddConnection(userinput.InputBegan, function(input, processed)
-                if processed then return end
-                if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == UIToggle then
-                    RestoreToggle()
-                end
-            end)
+        if syde and type(syde.AddConnection) == "function" then
+            pcall(function() syde:AddConnection(userinput.InputBegan, onInputBegan) end)
         else
-            userinput.InputBegan:Connect(function(input, processed)
-                if processed then return end
-                if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == UIToggle then
-                    RestoreToggle()
-                end
-            end)
+            userinput.InputBegan:Connect(onInputBegan)
         end
 
         -- Visual sync
         local function syncVisual()
-            if not self.btn then return end
-            local hidden = (WINDOW and WINDOW.Visible == false) or (Library and Library.Enabled == false)
+            if not b then return end
+            local hidden = false
+            if type(WINDOW) == "table" and WINDOW.Visible ~= nil then
+                hidden = (WINDOW.Visible == false)
+            elseif type(Library) == "table" and Library.Enabled ~= nil then
+                hidden = (Library.Enabled == false)
+            end
             local target = hidden and 0.05 or 0.3
-            tweenservice:Create(self.btn, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {ImageTransparency = target}):Play()
+            pcall(function() tweenservice:Create(b, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {ImageTransparency = target}):Play() end)
         end
 
-        if syde and syde.AddConnection then
-            syde:AddConnection(WINDOW:GetPropertyChangedSignal("Visible"), syncVisual)
-            syde:AddConnection(camera:GetPropertyChangedSignal("ViewportSize"), function()
-                local insetY = GuiService:GetGuiInset().Y
-                b.Position = UDim2.new(RESTORE_POS.X.Scale, RESTORE_POS.X.Offset, RESTORE_POS.Y.Scale, insetY + RESTORE_POS.Y.Offset)
-            end)
-        else
-            WINDOW:GetPropertyChangedSignal("Visible"):Connect(syncVisual)
-            camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
-                local insetY = GuiService:GetGuiInset().Y
-                b.Position = UDim2.new(RESTORE_POS.X.Scale, RESTORE_POS.X.Offset, RESTORE_POS.Y.Scale, insetY + RESTORE_POS.Y.Offset)
-            end)
+        if type(WINDOW) == "table" and WINDOW.GetPropertyChangedSignal then
+            if syde and type(syde.AddConnection) == "function" then
+                pcall(function() syde:AddConnection(WINDOW:GetPropertyChangedSignal("Visible"), syncVisual) end)
+            else
+                WINDOW:GetPropertyChangedSignal("Visible"):Connect(syncVisual)
+            end
         end
+
+        camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+            local insetY = GuiService:GetGuiInset().Y
+            pcall(function()
+                b.Position = UDim2.new(RESTORE_POS.X.Scale, RESTORE_POS.X.Offset, RESTORE_POS.Y.Scale, insetY + RESTORE_POS.Y.Offset)
+            end)
+        end)
+
         syncVisual()
 
-        -- Cleanup
-        if Library then
+        -- Cleanup when library destroyed
+        if type(Library) == "table" and Library.GetPropertyChangedSignal then
             Library.AncestryChanged:Connect(function(_, parent)
                 if not parent and self.gui then
-                    self.gui:Destroy()
+                    pcall(function() self.gui:Destroy() end)
                     self.gui, self.btn = nil, nil
                 end
             end)
@@ -1493,7 +1620,7 @@ function Restore:SetEnabled(on)
         self:_create()
     end
     if self.gui then
-        self.gui.Enabled = self.enabled
+        pcall(function() self.gui.Enabled = self.enabled end)
     end
 end
 
