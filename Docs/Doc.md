@@ -3,8 +3,7 @@
 ## Loading
 
 ```lua
-local SydeUI = loadstring(game:HttpGet("https://
-Loadingraw.githubusercontent.com/yarrosvault/syde/refs/heads/main/source", true))()
+local SydeUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/SupermanMario/UI/refs/heads/main/Syde/Source", true))()
 ```
 *Note: This is a loader. It fetches and executes the actual Syde UI source from the Github repo.*
 
