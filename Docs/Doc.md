@@ -215,7 +215,7 @@ local hasRequest = typeof(request) == "function" or typeof(http_request) == "fun
 *Include examples/demo.lua that shows Load, Init, basic elements, and a modal:*
 
 ```lua
-local SydeUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/yarrosvault/syde/refs/heads/main/source", true))()
+local SydeUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/SupermanMario/UI/refs/heads/main/Syde/Source", true))()
 local Window = SydeUI:Init({ Title = 'Lavender', SubText = 'Made With 💓 By @SellEssence' })
 local Main = Window:InitTab('Main')
 
