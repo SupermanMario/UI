@@ -1349,6 +1349,165 @@ function ToggleUI()
 	end)
 end
 
+---- mobile support
+
+local RESTORE_FORCE_PC = false -- test for PC when i cant test on Mobile <:
+
+local RESTORE_ICON = "rbxassetid://83267942683828"
+local RESTORE_POS  = UDim2.new(0, 18, 0, 18)
+
+local GuiService = game:GetService("GuiService")
+local isMobile = userinput and userinput.TouchEnabled
+local RESTORE_ENABLED_DEFAULT = (RESTORE_FORCE_PC == true) or isMobile
+
+-- Controller
+local Restore = {
+    gui = nil,
+    btn = nil,
+    enabled = false
+}
+
+function Restore:_create()
+    if not coregui then return end
+
+    self.gui = coregui:FindFirstChild("SydeRestore")
+    if not self.gui then
+        self.gui = Instance.new("ScreenGui")
+        self.gui.Name = "SydeRestore"
+        self.gui.ResetOnSpawn = false
+        self.gui.IgnoreGuiInset = true
+        self.gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        self.gui.DisplayOrder = 10_000
+        self.gui.Parent = coregui
+    end
+
+    self.btn = self.gui:FindFirstChild("RestoreButton")
+    if not self.btn then
+        local b = Instance.new("ImageButton")
+        b.Name = "RestoreButton"
+        b.Size = UDim2.new(0, 42, 0, 42)
+        b.Position = RESTORE_POS
+        b.BackgroundTransparency = 1
+        b.Image = RESTORE_ICON
+        b.ImageTransparency = 0.2
+        b.AutoButtonColor = false
+        b.Parent = self.gui
+
+        -- Hover/press FX
+        b.MouseEnter:Connect(function()
+            tweenservice:Create(b, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {ImageTransparency = 0}):Play()
+        end)
+        b.MouseLeave:Connect(function()
+            tweenservice:Create(b, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {ImageTransparency = 0.2}):Play()
+        end)
+        b.MouseButton1Down:Connect(function()
+            tweenservice:Create(b, TweenInfo.new(0.12, Enum.EasingStyle.Sine), {Size = UDim2.new(0, 38, 0, 38)}):Play()
+        end)
+        b.MouseButton1Up:Connect(function()
+            tweenservice:Create(b, TweenInfo.new(0.12, Enum.EasingStyle.Sine), {Size = UDim2.new(0, 42, 0, 42)}):Play()
+        end)
+
+        -- Draggable
+        if syde and syde.AddDrag then
+            syde:AddDrag(b, b, true)
+        end
+
+        -- Toggle handler
+        local function RestoreToggle()
+            if ToggleUI then
+                ToggleUI()
+                return
+            end
+            if Library then
+                local isClosed = (WINDOW and WINDOW.Visible == false) or (Library.Enabled == false)
+                if isClosed then
+                    if OpenUI then OpenUI() end
+                    Library.Enabled = true
+                else
+                    if CloseUI then CloseUI() end
+                    Library.Enabled = false
+                end
+            end
+        end
+
+        -- Click (works on touch and mouse)
+        b.MouseButton1Click:Connect(RestoreToggle)
+
+        -- Honor keybind
+        if syde and syde.AddConnection then
+            syde:AddConnection(userinput.InputBegan, function(input, processed)
+                if processed then return end
+                if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == UIToggle then
+                    RestoreToggle()
+                end
+            end)
+        else
+            userinput.InputBegan:Connect(function(input, processed)
+                if processed then return end
+                if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == UIToggle then
+                    RestoreToggle()
+                end
+            end)
+        end
+
+        -- Visual sync
+        local function syncVisual()
+            if not self.btn then return end
+            local hidden = (WINDOW and WINDOW.Visible == false) or (Library and Library.Enabled == false)
+            local target = hidden and 0.05 or 0.3
+            tweenservice:Create(self.btn, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {ImageTransparency = target}):Play()
+        end
+
+        if syde and syde.AddConnection then
+            syde:AddConnection(WINDOW:GetPropertyChangedSignal("Visible"), syncVisual)
+            syde:AddConnection(camera:GetPropertyChangedSignal("ViewportSize"), function()
+                local insetY = GuiService:GetGuiInset().Y
+                b.Position = UDim2.new(RESTORE_POS.X.Scale, RESTORE_POS.X.Offset, RESTORE_POS.Y.Scale, insetY + RESTORE_POS.Y.Offset)
+            end)
+        else
+            WINDOW:GetPropertyChangedSignal("Visible"):Connect(syncVisual)
+            camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+                local insetY = GuiService:GetGuiInset().Y
+                b.Position = UDim2.new(RESTORE_POS.X.Scale, RESTORE_POS.X.Offset, RESTORE_POS.Y.Scale, insetY + RESTORE_POS.Y.Offset)
+            end)
+        end
+        syncVisual()
+
+        -- Cleanup
+        if Library then
+            Library.AncestryChanged:Connect(function(_, parent)
+                if not parent and self.gui then
+                    self.gui:Destroy()
+                    self.gui, self.btn = nil, nil
+                end
+            end)
+        end
+
+        self.btn = b
+    end
+end
+
+function Restore:SetEnabled(on)
+    self.enabled = not not on
+    if not self.gui or not self.btn then
+        self:_create()
+    end
+    if self.gui then
+        self.gui.Enabled = self.enabled
+    end
+end
+
+-- Init with PC override or mobile default
+Restore:SetEnabled(RESTORE_ENABLED_DEFAULT)
+
+-- Optional: expose toggle function globally for runtime control
+_G.SydeRestoreSetEnabled = function(on)
+    Restore:SetEnabled(on)
+end
+
+
+
+--end of mobile support
 
 -- [Remove PlaceHolders]
 syde:HidePlaceHolder(TABS, 'Tb')
