@@ -684,7 +684,7 @@ do
 		LOADER.Parent = coregui
 
 		-- PreLoad
-		Config.Name = Config.Name or 'Syde™'
+		Config.Name = Config.Name or 'OblivionX_Configs™'
 		Config.Logo = Config.Logo or 'rbxassetid://14554547135'
 		Config.ConfigFolder = Config.ConfigFolder or 'syde'
 		Config.Status = Config.Status or false
@@ -6557,7 +6557,7 @@ function syde:Init(library)
 					}
 					print("Configuration loaded successfully from a previous session.")
 				elseif not success then
-					warn("OblivionX Configurations Error 〡 " .. tostring(result))
+					warn("OblivionX urations Error 〡 " .. tostring(result))
 				end
 			end
 		end
