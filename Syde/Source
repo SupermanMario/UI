@@ -6478,62 +6478,99 @@ function syde:Init(library)
 
 		end
 
-		function InitElement:Rate(Rate)
-			local RateData = {
-				Title = Rate.Title;
-				WebHook = Rate.WebHook;
-			}
+function InitElement:Rate(Rate) -- rate / webhook stuff
+    local RateData = {
+        Title    = Rate.Title or "Rate Us",
+        WebHook  = Rate.WebHook or nil,
+        CallBack = Rate.CallBack or nil,
+        Cooldown = Rate.Cooldown or 25,
+        Message  = Rate.Message or "**User:** {user} (ID: {id})\n**Rating:** {rating}/5"
+    }
 
-			local RateBlock = PAGES.Page.Rate:Clone()
-			RateBlock.Visible = true
-			RateBlock.Parent = Page
-			RateBlock.Title.Text = RateData.Title
+    local HttpService = game:GetService("HttpService")
+    local playerSvc   = game:GetService("Players")
+    local LocalPlayer = playerSvc.LocalPlayer
+    local lastSend    = 0
 
-			local starsFrame = RateBlock.stars
-			local stars = {}
+    local RateBlock = PAGES.Page.Rate:Clone()
+    RateBlock.Visible = true
+    RateBlock.Parent  = Page
+    RateBlock.Title.Text = RateData.Title
 
-			for i = 1, 5 do
-				table.insert(stars, starsFrame:FindFirstChild(i))
-			end
+    local starsFrame = RateBlock.stars
+    local stars = {}
+    for i = 1, 5 do
+        table.insert(stars, starsFrame:FindFirstChild(i))
+    end
 
-			local function highlightStars(hoveredIndex, litCount)
-				for i, star in ipairs(stars) do
-					if i <= litCount then
-						tweenservice:Create(star, TweenInfo.new(0.43, Enum.EasingStyle.Exponential), {ImageColor3 = Color3.fromRGB(255, 255, 0)}):Play()
-						tweenservice:Create(star.glow, TweenInfo.new(0.43, Enum.EasingStyle.Exponential), {ImageTransparency = 0.7}):Play()
-					else
-						tweenservice:Create(star, TweenInfo.new(0.43, Enum.EasingStyle.Exponential), {ImageColor3 = Color3.fromRGB(25, 25, 25)}):Play()
-						tweenservice:Create(star.glow, TweenInfo.new(0.43, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
-					end
+    local selected = 0
 
-					-- Scale only the hovered star
-					if i == hoveredIndex then
-						tweenservice:Create(star.UIScale, TweenInfo.new(0.43, Enum.EasingStyle.Exponential), {Scale = 1.2}):Play()
-					else
-						tweenservice:Create(star.UIScale, TweenInfo.new(0.43, Enum.EasingStyle.Exponential), {Scale = 1}):Play()
-					end
-				end
-			end
+    local function highlightStars(count)
+        for i, star in ipairs(stars) do
+            local lit = i <= count
+            local targetColor = lit and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(25, 25, 25)
+            local glowTransparency = lit and 0.7 or 1
+            tweenservice:Create(star, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageColor3 = targetColor}):Play()
+            tweenservice:Create(star.glow, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = glowTransparency}):Play()
+        end
+    end
 
-			local selected = 0
+    local function sendRating(rating)
+        local now = tick()
+        if now - lastSend < RateData.Cooldown then
+            syde:Notify({
+                Title   = "Cooldown",
+                Content = "Please wait before submitting again.",
+                Duration = 4
+            })
+            return
+        end
 
-			for i, star in ipairs(stars) do
-				star.MouseEnter:Connect(function()
-					highlightStars(i, i)
-				end)
+        if typeof(RateData.CallBack) == "function" then
+            pcall(function() RateData.CallBack(rating) end)
+        end
 
-				star.MouseLeave:Connect(function()
-					highlightStars(0, selected ~= 0 and selected or 0)
-				end)
+        local username = LocalPlayer and LocalPlayer.Name or "Unknown"
+        local userid   = LocalPlayer and LocalPlayer.UserId or "Unknown"
+        local msg = RateData.Message
+            :gsub("{user}", username)
+            :gsub("{id}", tostring(userid))
+            :gsub("{rating}", tostring(rating))
 
-				star.MouseButton1Click:Connect(function()
-					selected = i
-					tweenservice:Create(star.glow.UIScale, TweenInfo.new(0.55, Enum.EasingStyle.Exponential), {Scale = 1.3}):Play()
-					task.wait(0.35)
-					tweenservice:Create(star.glow.UIScale, TweenInfo.new(0.55, Enum.EasingStyle.Exponential), {Scale = 1}):Play()
-					print(selected)
-				end)
-			end
+        if RateData.WebHook and request then
+            local payload = HttpService:JSONEncode({ content = msg })
+            local ok, err = pcall(function()
+                request({
+                    Url     = RateData.WebHook,
+                    Method  = "POST",
+                    Headers = {["Content-Type"] = "application/json"},
+                    Body    = payload
+                })
+            end)
+            if not ok then
+                syde:Notify({Title="Webhook Error", Content=tostring(err), Duration=5})
+            else
+                syde:Notify({Title="Thanks!", Content="Rating submitted!", Duration=4})
+            end
+        else
+            syde:Notify({Title="Thanks!", Content="Rating submitted!", Duration=4})
+        end
+
+        lastSend = now
+    end
+
+    for i, star in ipairs(stars) do
+        star.MouseEnter:Connect(function() highlightStars(i) end)
+        star.MouseLeave:Connect(function() highlightStars(selected) end)
+        star.MouseButton1Click:Connect(function()
+            selected = i
+            highlightStars(selected)
+            sendRating(selected)
+        end)
+    end
+
+    highlightStars(0)
+end
 
 		end
 
