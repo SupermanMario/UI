@@ -1073,7 +1073,7 @@ do
 
 			if Config.AutoJoinDiscord and Config.AutoJoinDiscord.Enabled then
 				local discordConfig = Config.AutoJoinDiscord
-				local rootFolder = Config.ConfigurationSaving and Config.ConfigurationSaving.FolderName or "SydeSec"
+				local rootFolder = Config.ConfigurationSaving and Config.ConfigurationSaving.FolderName or "Oblx"
 				local discordFolder = rootFolder .. "/DiscordInvites"
 				local inviteCode = discordConfig.Invite
 				local inviteFilePath = discordFolder .. "/" .. inviteCode .. ".txt"
