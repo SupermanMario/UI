@@ -993,7 +993,7 @@ do
 
 
 			TweenWorkLabel(1,'rbxassetid://105810189969774', 'Cleaning Things Up...')
-			local UI_TAG = "sydeUILoader"
+			local UI_TAG = "OblivionX_UI"
 			local MARKER_NAME = "SYDEUIDetector"
 			local INTERNAL_UUID = ("SYDE-" .. tostring(game.JobId):gsub("-", "") .. tostring(tick())):gsub("%.", "")
 			local PROTECTION_EVENT = Instance.new("BindableEvent")
@@ -1648,7 +1648,7 @@ function syde:Init(library)
 	Library.Enabled = true
 
 	if loaded == false then
-		local UI_TAG = "sydeUILoader"
+		local UI_TAG = "OblivionX"
 		local MARKER_NAME = "SYDEUIDetector"
 		local INTERNAL_UUID = ("SYDE-" .. tostring(game.JobId):gsub("-", "") .. tostring(tick())):gsub("%.", "")
 		local PROTECTION_EVENT = Instance.new("BindableEvent")
