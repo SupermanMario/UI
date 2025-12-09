@@ -959,7 +959,7 @@ do
 			TweenWorkLabel(1,'rbxassetid://136002400178503', 'Verifying Configuration...')
 
 			if Config.ConfigurationSaving and Config.ConfigurationSaving.Enabled then
-				local folderName = Config.ConfigurationSaving.FolderName or "SydeSec"
+				local folderName = Config.ConfigurationSaving.FolderName or "Oblx"
 				local fileName = Config.ConfigurationSaving.FileName or "default_config"
 				local fullPath = folderName .. "/" .. fileName .. ".lua"
 
